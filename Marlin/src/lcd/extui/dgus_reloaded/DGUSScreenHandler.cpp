@@ -138,7 +138,9 @@ void DGUSScreenHandler::Loop() {
   if (current_screen == DGUS_Screen::LEVELING_PROBING && IsPrinterIdle()) {
     dgus_display.PlaySound(3);
 
-    SetStatusMessage(ExtUI::getMeshValid() ? F("Probing successful") : F("Probing failed"));
+    #if HAS_BED_PROBE
+      SetStatusMessage(ExtUI::getMeshValid() ? F("Probing successful") : F("Probing failed"));
+    #endif
 
     MoveToScreen(DGUS_Screen::LEVELING_AUTOMATIC);
     return;
@@ -202,7 +204,9 @@ void DGUSScreenHandler::StoreSettings(char *buff) {
   data.initialized = true;
   data.volume = dgus_display.GetVolume();
   data.brightness = dgus_display.GetBrightness();
-  data.abl = (ExtUI::getLevelingActive() && ExtUI::getMeshValid());
+  #if HAS_BED_PROBE
+    data.abl = (ExtUI::getLevelingActive() && ExtUI::getMeshValid());
+  #endif
 
   memcpy(buff, &data, sizeof(data));
 }
@@ -217,11 +221,13 @@ void DGUSScreenHandler::LoadSettings(const char *buff) {
   dgus_display.SetVolume(data.initialized ? data.volume : DGUS_DEFAULT_VOLUME);
   dgus_display.SetBrightness(data.initialized ? data.brightness : DGUS_DEFAULT_BRIGHTNESS);
 
-  if (data.initialized) {
-    leveling_active = (data.abl && ExtUI::getMeshValid());
+  #if HAS_BED_PROBE
+    if (data.initialized) {
+      leveling_active = (data.abl && ExtUI::getMeshValid());
 
-    ExtUI::setLevelingActive(leveling_active);
-  }
+      ExtUI::setLevelingActive(leveling_active);
+    }
+  #endif
 }
 
 void DGUSScreenHandler::ConfigurationStoreWritten(bool success) {
@@ -263,15 +269,17 @@ void DGUSScreenHandler::MeshUpdate(const int8_t xpos, const int8_t ypos) {
     return;
   }
 
-  uint8_t point = ypos * GRID_MAX_POINTS_X + xpos;
-  probing_icons[point < 16 ? 0 : 1] |= (1U << (point % 16));
+  #if HAS_BED_PROBE
+    uint8_t point = ypos * GRID_MAX_POINTS_X + xpos;
+    probing_icons[point < 16 ? 0 : 1] |= (1U << (point % 16));
 
-  if (xpos >= GRID_MAX_POINTS_X - 1
-      && ypos >= GRID_MAX_POINTS_Y - 1
-      && !ExtUI::getMeshValid()) {
-    probing_icons[0] = 0;
-    probing_icons[1] = 0;
-  }
+    if (xpos >= GRID_MAX_POINTS_X - 1
+        && ypos >= GRID_MAX_POINTS_Y - 1
+        && !ExtUI::getMeshValid()) {
+      probing_icons[0] = 0;
+      probing_icons[1] = 0;
+    }
+  #endif
 
   TriggerFullUpdate();
 }

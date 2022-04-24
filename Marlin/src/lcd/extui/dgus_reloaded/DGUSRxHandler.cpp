@@ -539,7 +539,9 @@ void DGUSRxHandler::DisableABL(DGUS_VP &vp, void *data_ptr) {
     return;
   }
 
-  ExtUI::setLevelingActive(false);
+  #if HAS_BED_PROBE
+    ExtUI::setLevelingActive(false);
+  #endif
 
   dgus_screen_handler.TriggerEEPROMSave();
   dgus_screen_handler.TriggerFullUpdate();
